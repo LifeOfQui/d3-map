@@ -10,10 +10,13 @@
     <body>
         <script type="text/javascript" src="https://d3js.org/d3.v4.min.js"></script>
         <script src="trip_data.js"></script>
+        <script src="travel_points_java.js"></script>
         <script src="https://unpkg.com/topojson-client@3"></script>
+        <link rel="stylesheet" type="text/css" href="map_style.css" />
         <script>
             var width = window.innerWidth,
-                height = window.innerHeight;
+                height = window.innerHeight,
+                centered;
 
             var projection = d3.geoMercator()
                 .translate([width / 2, height / 1.4]);
@@ -27,6 +30,10 @@
             var path = d3.geoPath()
                 .projection(projection);
 
+            var tooltip = d3.select('body')
+                .append('div')
+                    .classed('tooltip hidden', true);
+
             // load and display the World
             d3.json("https://unpkg.com/world-atlas@1/world/50m.json", function(error, topology) {
                 g.selectAll("path")
@@ -35,7 +42,8 @@
                     .enter()
                     .append("path")
                         .attr('fill', colorCountry)
-                        .attr("d", path);
+                        .attr("d", path)
+                        .on("click", zoomInSelectedCountry);
 
                 g.selectAll("circle")
                     .data(home)
@@ -47,18 +55,104 @@
                         .attr("cy", function(d) {
                             return projection([d.lon, d.lat])[1];
                         })
-                        .attr('fill', '#ff0000')
                         .attr("r", 2);
+
+                g.selectAll("circle")
+                    .data(travel_points_java)
+                    .enter()
+                    .append("circle")
+                        .attr("cx", function(d) {
+                            return projection([d.lon, d.lat])[0];
+                        })
+                        .attr("cy", function(d) {
+                            return projection([d.lon, d.lat])[1];
+                        })
+                        .on('mousemove', function (d) {
+                            console.log(d);
+                            tooltip
+                                .classed('hidden', false)
+                                .style('position', 'absolute')
+                                .style("left", (d3.event.pageX - tooltip.node().offsetWidth / 2) + "px")
+                                .style("top", (d3.event.pageY - tooltip.node().offsetHeight - 10) + "px")
+                                .html(`
+                                    <p>${d.name}</p>
+                                `);
+                        })
+                        .on('mouseout', function () {
+                            tooltip
+                                .classed('tooltip hidden', true)
+                        })
+                        .attr("r", 0.3);
             });
 
             // color country
             function colorCountry(country) {
-                for (var i = 0; i < countries_holiday.length; i++) {
-                    if (countries_holiday[i].id == country.id) {
-                        return '#55c57a';
-                    }
+                // for (var i = 0; i < countries_holiday.length; i++) {
+                //     if (countries_holiday[i].id == country.id) {
+                //         return '#55c57a';
+                //     }
+                // }
+                // return '#e7d8ad';
+                if (countries_holiday.includes(country.id)) {
+                    return '#55c57a';
+                } else {
+                    return '#e7d8ad';
                 }
-                return '#e7d8ad';
+            }
+
+            // tooltip for country
+            function tooltipCountry(country) {
+                // for (var i = 0; i < countries_holiday.length; i++) {
+                //     if (countries_holiday[i].id == country.id) {
+                //         console.log(countries_holiday[i].name);
+                //         return `<p>${countries_holiday[i].name}</p>`
+                //     }
+                // }
+                return `<p>Not</p>`;
+            }
+
+            //clicked
+            function zoomInSelectedCountry(d) {
+                var x, y, k;
+                //if not centered into that country and clicked country in visited countries
+                if ((d && centered !== d) & (countries_holiday.includes(d.id))) {
+                    var centroid = path.centroid(d); //get center of country
+                    var bounds = path.bounds(d); //get bounds of country
+                    var dx = bounds[1][0] - bounds[0][0], //get bounding box
+                        dy = bounds[1][1] - bounds[0][1];
+                    //get transformation values
+                    x = (bounds[0][0] + bounds[1][0]) / 2;
+                    y = (bounds[0][1] + bounds[1][1]) / 2;
+                    k = Math.min(width / dx, height / dy);
+                    centered = d;
+                    } else {
+                    //else reset to world view
+                    x = width / 2;
+                    y = height / 2;
+                    k = 1;
+                    centered = null;
+                }
+                //set class of country to .active
+                g.selectAll("path")
+                    .classed("active", centered && function(d) { return d === centered; })
+
+
+                // make contours thinner before zoom for smoothness
+                if (centered !== null){
+                    g.selectAll("path")
+                        .style("stroke-width", (0.75 / k) + "px");
+                }
+
+                // map transition
+                g.transition()
+                    .duration(750)
+                    .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")scale(" + k + ")translate(" + -x + "," + -y + ")")
+                    .on('end', function() {
+                        if (centered === null) {
+                            g.selectAll("path")
+                               .style("stroke-width", (0.75 / k) + "px");
+                        }
+                    });
             }
 
         </script>
