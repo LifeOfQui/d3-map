@@ -34,3 +34,15 @@ circle {
 	background: white;
 	fill: white;
 }
+
+.flight_arc {
+	fill: none;
+	stroke: #f46b6b;
+    stroke-width: 2px;
+}
+
+.travel_arc {
+	fill: none;
+	stroke: #FFef05;
+    stroke-width: 0.3px;
+}

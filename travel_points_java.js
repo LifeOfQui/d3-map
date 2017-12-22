@@ -1,10 +1,5 @@
 var travel_points_java = [
     {
-		"name" : "München",
-        "lon" : 11.581980,
-		"lat" : 48.135125
-	},
-    {
 		"name" : "Jakarta",
         "lon" : 106.845599,
 		"lat" : -6.2087634
@@ -48,10 +43,22 @@ var travel_points_java = [
 		"name" : "Jakarta",
         "lon" : 106.845599,
 		"lat" : -6.2087634
-	},
-    {
-		"name" : "München",
-        "lon" : 11.581980,
-		"lat" : 48.135125
 	}
 ];
+
+function make_travel_data(flight_points){
+	var coors = [];
+	for(var i=0, len=flight_points.length; i<len; i++){
+		coors.push([flight_points[i].lon, flight_points[i].lat ]);
+	}
+	// (note: loop until length - 1 since we're getting the next
+    //  item with i+1)
+    var flight_paths = {
+            type: "LineString",
+            coordinates: coors
+        };
+
+	return flight_paths;
+}
+
+var java_travel_data = make_travel_data(travel_points_java);
